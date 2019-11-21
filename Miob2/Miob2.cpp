@@ -161,10 +161,30 @@ public:
 		return min_taboo;
 	}
 
-	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> taboo(const std::vector<int>& perm, int taboo_ttl, int no_impr_stop)
+	void build_moves_list(const int size, std::vector<int>& neighbour, std::vector<float>& neighbour_partials, float current_obj_func, std::vector<Move>& moves_list) {
+		// build moves list
+		for (int i = 0; i < size - 1; ++i) {
+			for (int j = i + 1; j < size; ++j) {
+				// generate neighbour
+				gen_swap(current_permutation, neighbour, i, j);
+
+				// get neighbour obj func
+				std::memcpy(neighbour_partials.data(), partial_costs.data(), sizeof(float) * partial_costs.size());
+				recalculate_obj(neighbour, neighbour_partials, i, j);
+				const float neighbour_obj_func = obj_func(neighbour_partials);
+
+				// add move to moves list
+				const Move move = { i, j, (neighbour_obj_func - current_obj_func) };
+				moves_list.push_back(move);
+			}
+		}
+	}
+
+	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> taboo(const std::vector<int>& perm, int taboo_ttl, int no_impr_stop, int master_list_size)
 	{
 		const int size = static_cast<int>(perm.size());
 		int no_improvement = 0;
+		int master_threshold;
 
 		std::vector<int> init_perm(perm);
 		std::vector<int> neighbour(perm);
@@ -175,33 +195,22 @@ public:
 
 		auto taboo_matrix = std::vector<float>(size * size, 0);
 		std::vector<Move> moves_list; moves_list.reserve(100000);
+		std::vector<Move> master_list; master_list.reserve(master_list_size);
 		std::vector<float> scores; scores.reserve(100000);
 
 		scores.push_back(best_obj_func);
 
 		while (no_improvement < no_impr_stop) {
-
-			// build moves list
-			for (int i = 0; i < size - 1; ++i) {
-				for (int j = i + 1; j < size; ++j) {
-					// generate neighbour
-					gen_swap(current_permutation, neighbour, i, j);
-
-					// get neighbour obj func
-					std::memcpy(neighbour_partials.data(), partial_costs.data(), sizeof(float) * partial_costs.size());
-					recalculate_obj(neighbour, neighbour_partials, i, j);
-					const float neighbour_obj_func = obj_func(neighbour_partials);
-
-					// add move to moves list
-					const Move move = { i, j, (neighbour_obj_func - current_obj_func) };
-					moves_list.push_back(move);
-				}
+			if (master_list.empty() || master_list[0].cost >= master_threshold) {
+				moves_list.clear();
+				build_moves_list(size, neighbour, neighbour_partials, current_obj_func, moves_list);
+				std::sort(moves_list.begin(), moves_list.end(), compareMoves);
+				master_list.assign(moves_list.begin(), moves_list.begin() + master_list_size);
 			}
+			// std::cout << "JUHU";
+			master_threshold = master_list[master_list.size() - 1].cost;
 
-			// sort moves list
-			std::sort(moves_list.begin(), moves_list.end(), compareMoves);
-
-			const Move best_move = get_move(moves_list, taboo_matrix, size, current_obj_func, best_obj_func);
+			const Move best_move = get_move(master_list, taboo_matrix, size, current_obj_func, best_obj_func);
 
 			// actualize taboo matrix - subtract 1 from every non-zero cell
 			for (int i = 0; i < size - 1; ++i) {
@@ -237,7 +246,12 @@ public:
 				no_improvement++;
 
 			scores.push_back(best_obj_func);
-			moves_list.clear();
+
+			// actualize master list
+			for (int i = 1; i < master_list.size(); ++i) {
+				master_list[i].cost += abs(best_move.cost);
+			}
+			master_list.erase(master_list.begin());
 
 		}
 
@@ -265,7 +279,7 @@ private:
 	int swaps = 0;
 };
 
-std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::vector<std::vector<float>>, std::vector<int>> time_count(QAP& instance, int algorithm, int how_many_times, int ts_ttl, int no_impr_stop)
+std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::vector<std::vector<float>>, std::vector<int>> time_count(QAP& instance, int algorithm, int how_many_times, int ts_ttl, int no_impr_stop, int master_list_size)
 {
 	int licznik = 0;
 	auto time0 = high_resolution_clock::now();
@@ -291,7 +305,7 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::ve
 		switch (algorithm) {
 
 		case 5:
-			result = instance.taboo(instance.getCurrentPerm(), ts_ttl, no_impr_stop);
+			result = instance.taboo(instance.getCurrentPerm(), ts_ttl, no_impr_stop, master_list_size);
 			break;
 		}
 
@@ -316,9 +330,10 @@ int main(int argc, char** argv)
 	int how_many_times = std::stoi(argv[3]);
 	int ts_ttl = std::stoi(argv[4]);
 	int no_impr_stop = std::stoi(argv[5]);
+	int master_list_size = std::stoi(argv[6]);
 
 	QAP instance(path);
-	auto tup = time_count(instance, algorithm, how_many_times, ts_ttl, no_impr_stop);
+	auto tup = time_count(instance, algorithm, how_many_times, ts_ttl, no_impr_stop, master_list_size);
 	//auto&& [init_perm, times, scores, swaps, best_perm] = time_count(instance, algorithm, time_random);
 	std::vector<std::vector<int>> init_perms = std::get<0>(tup);
 	std::vector<std::vector<int>> best_perms = std::get<1>(tup);
