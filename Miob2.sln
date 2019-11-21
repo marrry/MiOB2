@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29418.71
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Miob2", "Miob2\Miob2.vcxproj", "{280ED673-A879-4852-9759-280C6F0673D6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{280ED673-A879-4852-9759-280C6F0673D6}.Debug|x64.ActiveCfg = Debug|x64
+		{280ED673-A879-4852-9759-280C6F0673D6}.Debug|x64.Build.0 = Debug|x64
+		{280ED673-A879-4852-9759-280C6F0673D6}.Debug|x86.ActiveCfg = Debug|Win32
+		{280ED673-A879-4852-9759-280C6F0673D6}.Debug|x86.Build.0 = Debug|Win32
+		{280ED673-A879-4852-9759-280C6F0673D6}.Release|x64.ActiveCfg = Release|x64
+		{280ED673-A879-4852-9759-280C6F0673D6}.Release|x64.Build.0 = Release|x64
+		{280ED673-A879-4852-9759-280C6F0673D6}.Release|x86.ActiveCfg = Release|Win32
+		{280ED673-A879-4852-9759-280C6F0673D6}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {9D558CCB-0B77-4DCF-8232-3676E7740527}
+	EndGlobalSection
+EndGlobal
