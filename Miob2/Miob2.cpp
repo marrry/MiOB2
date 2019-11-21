@@ -177,6 +177,8 @@ public:
 		std::vector<Move> moves_list; moves_list.reserve(100000);
 		std::vector<float> scores; scores.reserve(100000);
 
+		scores.push_back(best_obj_func);
+
 		while (no_improvement < no_impr_stop) {
 
 			// build moves list
