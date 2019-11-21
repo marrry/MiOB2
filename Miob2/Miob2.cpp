@@ -58,7 +58,6 @@ public:
 	{
 		std::ifstream file(file_name);
 
-		int n;
 		file >> n;
 
 		std::vector<float> tmp_vec;
@@ -207,7 +206,6 @@ public:
 				std::sort(moves_list.begin(), moves_list.end(), compareMoves);
 				master_list.assign(moves_list.begin(), moves_list.begin() + master_list_size);
 			}
-			// std::cout << "JUHU";
 			master_threshold = master_list[master_list.size() - 1].cost;
 
 			const Move best_move = get_move(master_list, taboo_matrix, size, current_obj_func, best_obj_func);
@@ -270,6 +268,11 @@ public:
 		return tmp;
 	}
 
+	int getN()
+	{
+		return n;
+	}
+
 private:
 	Mat a, b;
 	PermGen rng;
@@ -277,9 +280,10 @@ private:
 	std::vector<int> current_permutation;
 	std::vector<float> partial_costs;
 	int swaps = 0;
+	int n;
 };
 
-std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::vector<std::vector<float>>, std::vector<int>> time_count(QAP& instance, int algorithm, int how_many_times, int ts_ttl, int no_impr_stop, int master_list_size)
+std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::vector<std::vector<float>>, std::vector<float>> time_count(QAP& instance, int algorithm, int how_many_times, int ts_ttl, int no_impr_stop, int master_list_size)
 {
 	int licznik = 0;
 	auto time0 = high_resolution_clock::now();
@@ -288,7 +292,7 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::ve
 	std::vector<std::vector<int>> init_perms;
 	std::vector<std::vector<int>> best_perms;
 	std::vector<std::vector<float>> runs;
-	std::vector<int> time_counts;
+	std::vector<float> time_counts;
 	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> result;
 
 	time_counts.reserve(10000);
@@ -321,8 +325,6 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::ve
 }
 
 
-
-
 int main(int argc, char** argv)
 {
 	std::string path = argv[1];
@@ -330,15 +332,26 @@ int main(int argc, char** argv)
 	int how_many_times = std::stoi(argv[3]);
 	int ts_ttl = std::stoi(argv[4]);
 	int no_impr_stop = std::stoi(argv[5]);
-	int master_list_size = std::stoi(argv[6]);
+	float list_size = std::stof(argv[6]);
+	int master_list_size;
 
 	QAP instance(path);
+	int moves_space = static_cast<int>((pow(instance.getN(), 2) - instance.getN()) / 2);
+
+	if (list_size <= 1) {
+		master_list_size = static_cast<int>(list_size * moves_space);
+	}
+	else {
+		if (list_size > moves_space) master_list_size = moves_space;
+		else master_list_size = static_cast<int>(list_size);
+	}
+
 	auto tup = time_count(instance, algorithm, how_many_times, ts_ttl, no_impr_stop, master_list_size);
 	//auto&& [init_perm, times, scores, swaps, best_perm] = time_count(instance, algorithm, time_random);
 	std::vector<std::vector<int>> init_perms = std::get<0>(tup);
 	std::vector<std::vector<int>> best_perms = std::get<1>(tup);
 	std::vector<std::vector<float>> scores = std::get<2>(tup);
-	std::vector<int> times = std::get<3>(tup);
+	std::vector<float> times = std::get<3>(tup);
 
 	std::cout << "number of runs: ";
 	std::cout << scores.size() << "\n";
