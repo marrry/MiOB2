@@ -290,6 +290,7 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::ve
 
 		case 5:
 			result = instance.taboo(instance.getCurrentPerm(), ts_ttl, no_impr_stop);
+			break;
 		}
 
 		licznik++;
