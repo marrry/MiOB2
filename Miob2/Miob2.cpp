@@ -297,7 +297,9 @@ public:
 		init_random();
 		float old_cost = init_obj_func(current_permutation);
 
-		//TODO: curr_p is not updated!!!
+		std::vector<int> start_perm(current_permutation);
+		std::vector<float> scores; scores.reserve(100000);
+
 		while (bad_iters < P*L && p > 0.01)
 		{
 			int x = 0, y = 0;
@@ -343,11 +345,15 @@ public:
 						y = y % n;
 					}
 				}
+
+				scores.push_back(old_cost);
 			}
 
 			c *= alpha;
 			p = exp(-delta / c);
 		}
+
+		return { start_perm, current_permutation, scores };
 	}
 
 	std::vector<int> getCurrentPerm() {
