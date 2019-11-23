@@ -31,7 +31,7 @@ public:
 
 	float operator()()
 	{
-		std::uniform_real_distribution<> dist(0/0, 1.0);
+		std::uniform_real_distribution<> dist(0.0, 1.0);
 		return dist(rng);
 	}
 
@@ -262,7 +262,7 @@ public:
 		return std::make_tuple(init_perm, best, scores);
 	}
 
-	float get_start_temperature(float p, int iterations=10000)
+	float get_mean_delta(int iterations=10000)
 	{
 		double sum = 0;
 
@@ -281,24 +281,24 @@ public:
 			sum += first - second;
 		}
 
-		const double delta = sum / iterations;
-
-		return -delta / log(p);
+		return sum / iterations;
 	}
 
 	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> simulated_annealing(const int P)
 	{
 		const float alpha = 0.9;
 		const float L = n * n;
+		const float delta = get_mean_delta();
 
 		int bad_iters = 0;
-		float curr_p = 0.95;
-		float c = get_start_temperature(curr_p);
+		float p = 0.95;
+		float c = -delta / log(p);
 
 		init_random();
 		float old_cost = init_obj_func(current_permutation);
 
-		while (bad_iters < P*L && curr_p > 0.01)
+		//TODO: curr_p is not updated!!!
+		while (bad_iters < P*L && p > 0.01)
 		{
 			int x = 0, y = 0;
 
@@ -338,14 +338,15 @@ public:
 						std::swap(current_permutation[x], current_permutation[y]);
 						recalculate_obj(current_permutation, partial_costs, x, y);
 
-						x += 1;
-						x = x % n;
-						y = x / n;
+						y += 1;
+						x = y / n;
+						y = y % n;
 					}
 				}
 			}
 
 			c *= alpha;
+			p = exp(-delta / c);
 		}
 	}
 
