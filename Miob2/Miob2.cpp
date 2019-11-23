@@ -29,6 +29,12 @@ public:
 		return dist(rng);
 	}
 
+	float operator()()
+	{
+		std::uniform_real_distribution<> dist(0/0, 1.0);
+		return dist(rng);
+	}
+
 	std::mt19937 rng;
 };
 
@@ -256,6 +262,92 @@ public:
 		return std::make_tuple(init_perm, best, scores);
 	}
 
+	float get_start_temperature(float p, int iterations=10000)
+	{
+		double sum = 0;
+
+		for (int i = 0; i < iterations; ++i)
+		{
+			init_random();
+			const double first = init_obj_func(current_permutation);
+
+			const int x = rng(0, n-1);
+			const int y = rng(0, n-1);
+
+			std::swap(current_permutation[x], current_permutation[y]);
+			recalculate_obj(current_permutation, partial_costs, x, y);
+			const double second = obj_func(partial_costs);
+
+			sum += first - second;
+		}
+
+		const double delta = sum / iterations;
+
+		return -delta / log(p);
+	}
+
+	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> simulated_annealing(const int P)
+	{
+		const float alpha = 0.9;
+		const float L = n * n;
+
+		int bad_iters = 0;
+		float curr_p = 0.95;
+		float c = get_start_temperature(curr_p);
+
+		init_random();
+		float old_cost = init_obj_func(current_permutation);
+
+		while (bad_iters < P*L && curr_p > 0.01)
+		{
+			int x = 0, y = 0;
+
+			for (int i = 0; i < L; ++i)
+			{
+				//generate new solution from current
+				std::swap(current_permutation[x], current_permutation[y]);
+				recalculate_obj(current_permutation, partial_costs, x, y);
+
+				const float new_cost = obj_func(partial_costs);
+
+				if (new_cost < old_cost)
+				{
+					//update solution
+					old_cost = new_cost;
+					x = 0;
+					y = 1;
+
+					bad_iters = 0;
+				}
+
+				else
+				{
+					bad_iters += 1;
+
+					if (exp(-(new_cost - old_cost) / c) > rng())
+					{
+						//update solution
+						old_cost = new_cost;
+						x = 0;
+						y = 1;
+					}
+
+					else
+					{
+						//revert to old solution
+						std::swap(current_permutation[x], current_permutation[y]);
+						recalculate_obj(current_permutation, partial_costs, x, y);
+
+						x += 1;
+						x = x % n;
+						y = x / n;
+					}
+				}
+			}
+
+			c *= alpha;
+		}
+	}
 
 	std::vector<int> getCurrentPerm() {
 		return current_permutation;
