@@ -278,7 +278,7 @@ public:
 			recalculate_obj(current_permutation, partial_costs, x, y);
 			const double second = obj_func(partial_costs);
 
-			sum += first - second;
+			sum += abs(first - second);
 		}
 
 		return sum / iterations;
@@ -287,8 +287,8 @@ public:
 	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> simulated_annealing(const int P)
 	{
 		const float alpha = 0.9;
-		const float L = n * n;
-		const float delta = get_mean_delta();
+		const float L = n * n / 2;
+		const float delta = get_mean_delta(n*n);
 
 		int bad_iters = 0;
 		float p = 0.95;
@@ -298,11 +298,12 @@ public:
 		float old_cost = init_obj_func(current_permutation);
 
 		std::vector<int> start_perm(current_permutation);
-		std::vector<float> scores; scores.reserve(100000);
+		std::vector<float> scores; scores.reserve(10000000);
 
 		while (bad_iters < P*L && p > 0.01)
 		{
-			int x = 0, y = 0;
+			int x = rng(0, n - 1);
+			int y = rng(0, n - 1);
 
 			for (int i = 0; i < L; ++i)
 			{
@@ -316,9 +317,6 @@ public:
 				{
 					//update solution
 					old_cost = new_cost;
-					x = 0;
-					y = 1;
-
 					bad_iters = 0;
 				}
 
@@ -330,8 +328,6 @@ public:
 					{
 						//update solution
 						old_cost = new_cost;
-						x = 0;
-						y = 1;
 					}
 
 					else
@@ -339,12 +335,14 @@ public:
 						//revert to old solution
 						std::swap(current_permutation[x], current_permutation[y]);
 						recalculate_obj(current_permutation, partial_costs, x, y);
-
-						y += 1;
-						x = y / n;
-						y = y % n;
 					}
 				}
+
+				x = rng(0, n - 1);
+				y = rng(0, n - 1);
+
+				while (x == y)
+					y = rng(0, n - 1);
 
 				scores.push_back(old_cost);
 			}
@@ -409,6 +407,10 @@ std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>, std::ve
 
 		case 5:
 			result = instance.taboo(instance.getCurrentPerm(), ts_ttl, no_impr_stop, master_list_size);
+			break;
+
+		case 6:
+			result = instance.simulated_annealing(10);
 			break;
 		}
 
