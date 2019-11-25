@@ -171,16 +171,21 @@ public:
 		for (int i = 0; i < size - 1; ++i) {
 			for (int j = i + 1; j < size; ++j) {
 				// generate neighbour
-				gen_swap(current_permutation, neighbour, i, j);
+				std::swap(current_permutation[i], current_permutation[j]);
+				recalculate_obj(current_permutation, partial_costs, i, j);
+				//gen_swap(current_permutation, neighbour, i, j);
 
 				// get neighbour obj func
-				std::memcpy(neighbour_partials.data(), partial_costs.data(), sizeof(float) * partial_costs.size());
-				recalculate_obj(neighbour, neighbour_partials, i, j);
-				const float neighbour_obj_func = obj_func(neighbour_partials);
+				//std::memcpy(neighbour_partials.data(), partial_costs.data(), sizeof(float) * partial_costs.size());
+				//recalculate_obj(neighbour, neighbour_partials, i, j);
+				const float neighbour_obj_func = obj_func(partial_costs);
 
 				// add move to moves list
 				const Move move = { i, j, (neighbour_obj_func - current_obj_func) };
 				moves_list.push_back(move);
+
+				std::swap(current_permutation[i], current_permutation[j]);
+				recalculate_obj(current_permutation, partial_costs, i, j);
 			}
 		}
 	}
@@ -197,6 +202,10 @@ public:
 		float best_obj_func = init_obj_func(perm);
 		float current_obj_func = init_obj_func(perm);
 		std::vector<float> neighbour_partials(partial_costs);
+
+		no_impr_stop = 10 * n * n;
+		taboo_ttl = n / 4;
+		master_list_size = n / 10;
 
 		auto taboo_matrix = std::vector<float>(size * size, 0);
 		std::vector<Move> moves_list; moves_list.reserve(100000);
@@ -229,12 +238,14 @@ public:
 			taboo_matrix[best_move.a * size + best_move.b] = taboo_ttl;
 
 			// set current solution as previous with new move
-			gen_swap(current_permutation, neighbour, best_move.a, best_move.b);
-			std::memcpy(current_permutation.data(), neighbour.data(), sizeof(int) * neighbour.size());
+			std::swap(current_permutation[best_move.a], current_permutation[best_move.b]);
+			//gen_swap(current_permutation, neighbour, best_move.a, best_move.b);
+			//std::memcpy(current_permutation.data(), neighbour.data(), sizeof(int) * neighbour.size());
 
 			// recalculate costs and save it in current partial costs
-			recalculate_obj(neighbour, neighbour_partials, best_move.a, best_move.b);
-			std::memcpy(partial_costs.data(), neighbour_partials.data(), sizeof(float) * neighbour_partials.size());
+			recalculate_obj(current_permutation, partial_costs, best_move.a, best_move.b);
+			//recalculate_obj(neighbour, neighbour_partials, best_move.a, best_move.b);
+			//std::memcpy(partial_costs.data(), neighbour_partials.data(), sizeof(float) * neighbour_partials.size());
 
 			// set current obj function
 			current_obj_func += best_move.cost;
@@ -287,8 +298,8 @@ public:
 	std::tuple<std::vector<int>, std::vector<int>, std::vector<float>> simulated_annealing(const int P)
 	{
 		const float alpha = 0.9;
-		const float L = n * n / 2;
-		const float delta = get_mean_delta(n*n);
+		const float L = n * n;
+		const float delta = get_mean_delta(10*n*n);
 
 		int bad_iters = 0;
 		float p = 0.95;
